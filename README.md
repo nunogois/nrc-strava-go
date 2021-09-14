@@ -7,10 +7,15 @@ Sync your Nike Run Club activities to Strava.
 Create a `.env` file on this folder with this format:
 
 ```
+START=
 NIKE_CLIENT_ID=
 NIKE_REFRESH_TOKEN=
 STRAVA=
 ```
+
+### START
+
+START should be the starting date for the search as **YYYY-MM-DD**, like for example **2021-06-01**.
 
 ### NRC
 
@@ -31,10 +36,11 @@ STRAVA=
 ## TODO
 
 - [ ] Make this work;
-- [ ] Use refresh tokens whenever possible;
-- [ ] Proper error handling;
-- [ ] Adapt to use [Viper](https://github.com/spf13/viper);
+- [x] Use refresh tokens whenever possible;
 - [ ] Add more info to README;
+- [ ] Adapt to use [Viper](https://github.com/spf13/viper);
+- [ ] Proper error handling;
+- [ ] Refactor requests to an API file;
 - [ ] Code review;
 
 ## Similar projects

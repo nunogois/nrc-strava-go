@@ -10,28 +10,39 @@ import (
 )
 
 type Activity struct {
-	Gpx Gpx `json:"gpx"`
+	Gpx Gpx `xml:"gpx"`
 }
 
 type Gpx struct {
-	Creator           string   `json:"@creator"`
-	XmlnsXsi          string   `json:"@xmlns:xsi"`
-	XsiSchemaLocation string   `json:"@xsi:schemaLocation"`
-	Version           string   `json:"@version"`
-	Xmlns             string   `json:"@xmlns"`
-	XmlnsGpxtpx       string   `json:"@xmlns:gpxtpx"`
-	XmlnsGpxx         string   `json:"@xmlns:gpxx"`
-	Metadata          Metadata `json:"metadata"`
-	Trk               Trk      `json:"trk"`
+	Creator           string   `xml:"creator,attr"`
+	XmlnsXsi          string   `xml:"xmlns:xsi,attr"`
+	XsiSchemaLocation string   `xml:"xsi:schemaLocation,attr"`
+	Version           string   `xml:"version,attr"`
+	Xmlns             string   `xml:"xmlns,attr"`
+	XmlnsGpxtpx       string   `xml:"xmlns:gpxtpx,attr"`
+	XmlnsGpxx         string   `xml:"xmlns:gpxx,attr"`
+	Metadata          Metadata `xml:"metadata"`
+	Trk               Trk      `xml:"trk"`
 }
 
 type Metadata struct {
-	Time string `json:"time"`
+	Time string `xml:"time"`
 }
 
 type Trk struct {
-	Name string `json:"name"`
-	Type int    `json:"type"`
+	Name   string `xml:"name"`
+	Type   int    `xml:"type"`
+	Trkseg Trkseg `xml:"trkseg"`
+}
+
+type Trkseg struct {
+	Trkpt []Trkpt `xml:"trkpt"`
+}
+
+type Trkpt struct {
+	Lat  float64 `xml:"lat,attr"`
+	Lon  float64 `xml:"lon,attr"`
+	Time string  `xml:"time"`
 }
 
 var client = &http.Client{

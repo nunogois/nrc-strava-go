@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/xml"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -19,8 +19,8 @@ func sendActivity(activity *Activity) <-chan string {
 
 		file, err := ioutil.TempFile("nrc-strava-go", "*.gpx")
 		defer os.Remove(file.Name())
-		json, _ := json.MarshalIndent(activity, "", " ")
-		file.Write(json)
+		xml, _ := xml.MarshalIndent(activity, "", " ")
+		file.Write(xml)
 
 		body := &bytes.Buffer{}
 		writer := multipart.NewWriter(body)

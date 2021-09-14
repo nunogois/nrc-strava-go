@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -43,11 +43,16 @@ func getTime(timestamp int) time.Time {
 	return t
 }
 
-func timeToISO(timestamp int) (date string) {
+func dateToTime(date string) int {
+	t, _ := time.Parse("2006-01-02", date)
+	return int(t.Unix() * 1000)
+}
+
+func timeToISO(timestamp int) string {
 	return getTime(timestamp).Format("2006-01-02T15:04:05-0700")
 }
 
-func timeToISODate(timestamp int) (date string) {
+func timeToISODate(timestamp int) string {
 	return getTime(timestamp).Format("2006-01-02")
 }
 
@@ -59,14 +64,16 @@ func getToken() (token string) {
 		RefreshToken: os.Getenv("NIKE_REFRESH_TOKEN"),
 	}
 
-	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(&body)
+	bodyJson, _ := json.Marshal(&body)
+	payload := strings.NewReader(string(bodyJson))
 
-	post, _ := http.NewRequest("POST", "https://api.nike.com/idn/shim/oauth/2.0/token", payloadBuf)
+	post, _ := http.NewRequest("POST", "https://api.nike.com/idn/shim/oauth/2.0/token", payload)
+	post.Header.Add("Content-Type", "application/json")
 
-	resp, err := client.Do(post)
+	resp, err := http.DefaultClient.Do(post)
 
-	if err != nil {
+	if err != nil || resp.Status != "200 OK" {
+		fmt.Println("Something went wrong requesting NRC token. Please review your .env information.")
 		return
 	}
 
@@ -111,8 +118,7 @@ func contains(s []string, str string) bool {
 }
 
 func GetNRCActivities(activities *[]Activity) {
-	// TODO: This should come from a local json file that keeps track, probably.
-	lastTime := 1622505600000 // 2021-06-01
+	lastTime := dateToTime(os.Getenv("START"))
 
 	for lastTime != 0 {
 		url := fmt.Sprintf("https://api.nike.com/sport/v3/me/activities/after_time/%d?metrics=ALL", lastTime)
