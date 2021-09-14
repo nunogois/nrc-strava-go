@@ -14,20 +14,24 @@ type Activity struct {
 }
 
 type Gpx struct {
-	Creator           string `json:"@creator"`
-	XmlnsXsi          string `json:"@xmlns:xsi"`
-	XsiSchemaLocation string `json:"@xsi:schemaLocation"`
-	Version           string `json:"@version"`
-	Xmlns             string `json:"@xmlns"`
-	XmlnsGpxtpx       string `json:"@xmlns:gpxtpx"`
-	XmlnsGpxx         string `json:"@xmlns:gpxx"`
-	Metadata          struct {
-		Time int `json:"time"`
-	} `json:"metadata"`
-	Trk struct {
-		Name string `json:"name"`
-		Type int    `json:"type"`
-	}
+	Creator           string   `json:"@creator"`
+	XmlnsXsi          string   `json:"@xmlns:xsi"`
+	XsiSchemaLocation string   `json:"@xsi:schemaLocation"`
+	Version           string   `json:"@version"`
+	Xmlns             string   `json:"@xmlns"`
+	XmlnsGpxtpx       string   `json:"@xmlns:gpxtpx"`
+	XmlnsGpxx         string   `json:"@xmlns:gpxx"`
+	Metadata          Metadata `json:"metadata"`
+	Trk               Trk      `json:"trk"`
+}
+
+type Metadata struct {
+	Time string `json:"time"`
+}
+
+type Trk struct {
+	Name string `json:"name"`
+	Type int    `json:"type"`
 }
 
 var client = &http.Client{
@@ -38,7 +42,7 @@ func loadEnv() {
 	err := godotenv.Load(".env")
 
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Error loading .env file. Read the README.md for more information.")
 	}
 }
 
