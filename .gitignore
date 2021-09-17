@@ -1,6 +1,5 @@
 # Custom
 *.env
-temp-*
 .DS_Store
 
 # Binaries for programs and plugins

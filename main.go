@@ -64,7 +64,7 @@ func main() {
 
 	activities := make([]Activity, 0)
 
-	GetNRCActivities(&activities)
+	GetFromNRC(&activities)
 	SendToStrava(&activities)
 
 	fmt.Printf("Finished. Processed %d activities.", len(activities))

@@ -45,7 +45,7 @@ type NRCTokenBody struct {
 }
 
 type TokenResp struct {
-	AccessToken string `json:"access_token"` // TODO: This is global between Strava and NRC
+	AccessToken string `json:"access_token"`
 }
 
 func getTime(timestamp int) time.Time {
@@ -61,7 +61,7 @@ func dateToTime(date string) int {
 }
 
 func timeToISO(timestamp int) string {
-	return getTime(timestamp).Format("2006-01-02T15:04:05-0700") // 2006-01-02T15:04:05.371Z
+	return getTime(timestamp).Format("2006-01-02T15:04:05-0700")
 }
 
 func timeToISODate(timestamp int) string {
@@ -136,7 +136,7 @@ func NewActivity(r NRCActivity) Activity {
 			Time: timeToISO(r.Start),
 		},
 		Trk: Trk{
-			Name: fmt.Sprintf("%s - NRC", timeToISODate(r.Start)),
+			Name: fmt.Sprintf("NRC - %s", timeToISODate(r.Start)),
 			Type: 9,
 			Trkseg: Trkseg{
 				Trkpt: points,
@@ -156,14 +156,15 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func GetNRCActivities(activities *[]Activity) {
+func GetNRCActivities(activities *[]Activity, token string) {
 	lastTime := dateToTime(os.Getenv("START"))
 
-	for lastTime != 0 {
+	loading := true
+	for loading {
 		url := fmt.Sprintf("https://api.nike.com/sport/v3/me/activities/after_time/%d?metrics=ALL", lastTime)
 
 		get, _ := http.NewRequest("GET", url, nil)
-		get.Header.Add("Authorization", fmt.Sprintf("Bearer %s", getNRCToken())) // TODO: Needs refactoring, currently being requested on loop
+		get.Header.Add("Authorization", "Bearer "+token)
 
 		resp, _ := client.Do(get)
 
@@ -186,6 +187,14 @@ func GetNRCActivities(activities *[]Activity) {
 		}
 
 		fmt.Printf("Total run activities found: %d\n", len(runs))
-		lastTime = all.Paging.AfterTime
+		if all.Paging.AfterTime != 0 {
+			lastTime = all.Paging.AfterTime
+		} else {
+			loading = false
+		}
 	}
+}
+
+func GetFromNRC(activities *[]Activity) {
+	GetNRCActivities(activities, getNRCToken())
 }

@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -32,6 +29,8 @@ func getStravaToken() string {
 	bodyJson, _ := json.Marshal(&body)
 	payload := strings.NewReader(string(bodyJson))
 
+	fmt.Println(body)
+
 	post, _ := http.NewRequest("POST", "https://www.strava.com/api/v3/oauth/token", payload)
 	post.Header.Add("Content-Type", "application/json")
 
@@ -50,53 +49,38 @@ func getStravaToken() string {
 	return response.AccessToken
 }
 
-func sendActivity(activity *Activity, token string, dir string) {
-
-	file, err := ioutil.TempFile(dir, "*.gpx")
-	defer os.Remove(file.Name())
-	defer os.Remove(dir)
-	// if err != nil {
-	// 	fmt.Println("Error: " + err.Error())
-	// }
-	activityXml, err := xml.MarshalIndent(activity.Gpx, "", " ")
+func sendActivity(activity *Activity, token string) {
+	activityXml, _ := xml.MarshalIndent(activity.Gpx, "", " ")
 	activityXml = []byte(xml.Header + string(activityXml))
-	file.Write(activityXml)
-
-	fmt.Println("Dir: " + file.Name())
-	fmt.Println("File: " + file.Name())
-	fmt.Println("Filepath base: " + filepath.Base(file.Name()))
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	writer.WriteField("description", "Uploaded from NRC.")
 	writer.WriteField("data_type", "gpx")
-	part, err := writer.CreateFormFile("file", filepath.Base(file.Name()))
-	io.Copy(part, file)
+	part, _ := writer.CreateFormFile("file", activity.Gpx.Trk.Name+".gpx")
+
+	part.Write(activityXml)
 	writer.Close()
 
-	send, err := http.NewRequest("POST", "https://www.strava.com/api/v3/uploads", body)
-	if err != nil {
-		fmt.Println("Something went wrong request: " + err.Error())
-	}
+	send, _ := http.NewRequest("POST", "https://www.strava.com/api/v3/uploads", body)
+
 	send.Header.Add("Content-Type", writer.FormDataContentType())
 	send.Header.Add("Authorization", "Bearer "+token)
 
 	resp, err := client.Do(send)
 
-	fmt.Println(resp.Status)
-
-	if err != nil {
-		fmt.Println("Something went wrong: " + err.Error())
+	if err != nil || resp.Status != "201 Created" {
+		fmt.Println("Something went wrong uploading Gpx data to Strava.")
+		fmt.Println("Status: " + resp.Status)
+		fmt.Println("Error: " + err.Error())
 	} else {
 		fmt.Println("Successfully uploaded activity: " + activity.Gpx.Trk.Name)
 	}
 }
 
 func SendToStrava(activities *[]Activity) {
-	dir, _ := ioutil.TempDir(".", "temp-")
-	defer os.Remove(dir)
-
+	token := getStravaToken()
 	for _, activity := range *activities {
-		sendActivity(&activity, getStravaToken(), dir)
+		sendActivity(&activity, token)
 	}
 }
