@@ -27,7 +27,8 @@ START should be the starting date for the search as **YYYY-MM-DD**, like for exa
 
 ### Strava
 
-> WIP
+1. Go to [Strava API Settings](https://www.strava.com/settings/api);
+2. Create a new app;
 
 ## Run
 
@@ -42,6 +43,7 @@ START should be the starting date for the search as **YYYY-MM-DD**, like for exa
 - [ ] Proper error handling;
 - [ ] Refactor requests to an API file;
 - [ ] Code review;
+- [ ] Add heartbeat, elevation and other relevant info;
 
 ## Similar projects
 

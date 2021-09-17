@@ -13,7 +13,19 @@ type NRCActivity struct {
 	Id          string   `json:"id"`
 	Type        string   `json:"type"`
 	MetricTypes []string `json:"metric_types"`
+	Metrics     []Metric `json:"metrics"`
 	Start       int      `json:"start_epoch_ms"`
+}
+
+type Metric struct {
+	Type   string        `json:"type"`
+	Values []MetricValue `json:"values"`
+}
+
+type MetricValue struct {
+	Start int     `json:"start_epoch_ms"`
+	End   int     `json:"end_epoch_ms"`
+	Value float64 `json:"value"`
 }
 
 type NRCResponse struct {
@@ -25,7 +37,7 @@ type Paging struct {
 	AfterTime int `json:"after_time"`
 }
 
-type TokenBody struct {
+type NRCTokenBody struct {
 	ClientId     string `json:"client_id"`
 	GrantType    string `json:"grant_type"`
 	UxId         string `json:"ux_id"`
@@ -33,7 +45,7 @@ type TokenBody struct {
 }
 
 type TokenResp struct {
-	AccessToken string `json:"access_token"`
+	AccessToken string `json:"access_token"` // TODO: This is global between Strava and NRC
 }
 
 func getTime(timestamp int) time.Time {
@@ -49,15 +61,15 @@ func dateToTime(date string) int {
 }
 
 func timeToISO(timestamp int) string {
-	return getTime(timestamp).Format("2006-01-02T15:04:05-0700")
+	return getTime(timestamp).Format("2006-01-02T15:04:05-0700") // 2006-01-02T15:04:05.371Z
 }
 
 func timeToISODate(timestamp int) string {
 	return getTime(timestamp).Format("2006-01-02")
 }
 
-func getToken() (token string) {
-	body := TokenBody{
+func getNRCToken() string {
+	body := NRCTokenBody{
 		ClientId:     os.Getenv("NIKE_CLIENT_ID"),
 		GrantType:    "refresh_token",
 		UxId:         "com.nike.sport.running.ios.6.5.1",
@@ -70,11 +82,11 @@ func getToken() (token string) {
 	post, _ := http.NewRequest("POST", "https://api.nike.com/idn/shim/oauth/2.0/token", payload)
 	post.Header.Add("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(post)
+	resp, err := client.Do(post)
 
 	if err != nil || resp.Status != "200 OK" {
 		fmt.Println("Something went wrong requesting NRC token. Please review your .env information.")
-		return
+		return ""
 	}
 
 	response := TokenResp{}
@@ -88,6 +100,30 @@ func getToken() (token string) {
 func NewActivity(r NRCActivity) Activity {
 	activity := Activity{}
 
+	points := []Trkpt{}
+
+	for _, metric := range r.Metrics {
+		if metric.Type == "latitude" {
+			for i, lat := range metric.Values {
+
+				var lon MetricValue
+				for _, metric := range r.Metrics {
+					if metric.Type == "longitude" {
+						lon = metric.Values[i]
+					}
+				}
+
+				point := Trkpt{
+					Time: timeToISO(lat.Start),
+					Lat:  lat.Value,
+					Lon:  lon.Value,
+				}
+
+				points = append(points, point)
+			}
+		}
+	}
+
 	activity.Gpx = Gpx{
 		Creator:           "StravaGPX",
 		XmlnsXsi:          "http://www.w3.org/2001/XMLSchema-instance",
@@ -97,11 +133,14 @@ func NewActivity(r NRCActivity) Activity {
 		XmlnsGpxtpx:       "http://www.garmin.com/xmlschemas/TrackPointExtension/v1",
 		XmlnsGpxx:         "http://www.garmin.com/xmlschemas/GpxExtensions/v3",
 		Metadata: Metadata{
-			Time: timeToISODate(r.Start),
+			Time: timeToISO(r.Start),
 		},
 		Trk: Trk{
-			Name: fmt.Sprintf("%s - NRC", timeToISO(r.Start)),
+			Name: fmt.Sprintf("%s - NRC", timeToISODate(r.Start)),
 			Type: 9,
+			Trkseg: Trkseg{
+				Trkpt: points,
+			},
 		},
 	}
 
@@ -124,7 +163,7 @@ func GetNRCActivities(activities *[]Activity) {
 		url := fmt.Sprintf("https://api.nike.com/sport/v3/me/activities/after_time/%d?metrics=ALL", lastTime)
 
 		get, _ := http.NewRequest("GET", url, nil)
-		get.Header.Add("Authorization", fmt.Sprintf("Bearer %s", getToken()))
+		get.Header.Add("Authorization", fmt.Sprintf("Bearer %s", getNRCToken())) // TODO: Needs refactoring, currently being requested on loop
 
 		resp, _ := client.Do(get)
 

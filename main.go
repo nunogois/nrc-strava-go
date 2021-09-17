@@ -23,6 +23,7 @@ type Gpx struct {
 	XmlnsGpxx         string   `xml:"xmlns:gpxx,attr"`
 	Metadata          Metadata `xml:"metadata"`
 	Trk               Trk      `xml:"trk"`
+	XMLName           struct{} `xml:"gpx"`
 }
 
 type Metadata struct {
@@ -64,8 +65,7 @@ func main() {
 	activities := make([]Activity, 0)
 
 	GetNRCActivities(&activities)
-	fmt.Println(activities)
-	//SendToStrava(&activities)
+	SendToStrava(&activities)
 
-	fmt.Printf("Finished. Processed %d activities", len(activities))
+	fmt.Printf("Finished. Processed %d activities.", len(activities))
 }
